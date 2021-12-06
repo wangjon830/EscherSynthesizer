@@ -1,11 +1,4 @@
-
-
-"""
-
-
-
-"""
-
+import structures.py
 
 class GoalGraph():
     def __init__(self):
@@ -31,14 +24,14 @@ def testProgram(syn, inputoutputs):
 
 def forward(syn, ops):
     newSyn = []
-    """for op in ops:
+    for op in ops:
         if op == PLUS or op == TIMES:
             for p in syn:
                 typep = p.type
-                if typep == ITE or typep == TIMES or typep == PLUS or typep == VAR:
+                if typep == ITE or typep == TIMES or typep == PLUS:
                     for term in syn:
                         type2 = term.type
-                        if type2 != NOT and type2 != AND and type2 != FALSE_exp and type2 !=LT:
+                        if type2 == ITE or type2 == TIMES or type2 == PLUS or type2 == LENGTH or type2 == HEAD or type2 == TAIL or type2 == MAX or type2 == MIN:
                             if op == PLUS:
                                 newSyn.append(Plus(p, term))
                             else:
@@ -50,10 +43,10 @@ def forward(syn, ops):
                 if typep == AND or typep == NOT or typep == LT:
                     for term in syn:
                         type2 = term.type
-                        if type2 != NOT and type2 != AND and type2 != FALSE_exp and type2 != LT:
+                        if type2 == ITE or type2 == TIMES or type2 == PLUS or type2 == LENGTH or type2 == HEAD or type2 == TAIL or type2 == MAX or type2 == MIN:
                             for term2 in syn:
                                 type3 = term2.type
-                                if type3 != NOT and type3 != AND and type3 != FALSE_exp and type3 != LT:
+                                if type3 == ITE or type3 == TIMES or type3 == PLUS or type3 == LENGTH or type3 == HEAD or type3 == TAIL or type3 == MAX or type3 == MIN:
                                     newSyn.append(Ite(p, term, term2))
         
         elif op == AND:
@@ -77,7 +70,7 @@ def forward(syn, ops):
                 if typep == ITE or typep == TIMES or typep == PLUS or typep == VAR or typep == NUM:
                     for term in syn:
                         type2 = term.type
-                        if type2 != NOT and type2 != AND and type2 != FALSE_exp and type2 !=LT:
+                        if type2 == ITE or type2 == TIMES or type2 == PLUS or type2 == LENGTH or type2 == HEAD or type2 == TAIL or type2 == MAX or type2 == MIN:
                             newSyn.append(Lt(p, term) )
         
         elif bool == LENGTH:
@@ -85,7 +78,7 @@ def forward(syn, ops):
                 typep = p.type
                 if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
                     newSyn.append(Length(p))
-        
+
         elif bool == REVERSE:
             for p in syn:
                 typep = p.type
@@ -147,10 +140,29 @@ def forward(syn, ops):
                 typep = p.type
                 if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
                     newSyn.append(Tail(p))
-
+    """
         check op and synthesize programs together
     """
     return newSyn
+
+
+def elimEquvalent(plist, inputoutputs):
+    newList = []
+    for term in plist:
+        exists = False
+        for term2 in newList:
+            count = 0
+            for input in inputoutputs:
+                if term.interpret(input) == term2.interpret(input):
+                    count+=1
+                else:
+                    break
+            if count == len(inputoutputs):
+                exists = True
+                break
+        if not exists:
+            newList.append(term)
+    return newList
 
 def splitgoal():
     return
@@ -162,7 +174,7 @@ def saturate():
     return
 
 def escher(syn, goalGraph, ops, inputoutputs, iterations):
-    for inputoutput in inputoutputs:
+    for inputoutput in inputoutputs:  # Init
         syn.append(inputoutput[0])
         goalGraph.root.append(inputoutput[1])
 
