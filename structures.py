@@ -8,6 +8,7 @@ LIST = "LIST"
 # Sythesis Boolean Ops
 FALSE_exp = "FALSE"
 AND = "AND"
+OR = "OR"
 NOT = "NOT"
 ITE = "ITE"
 
@@ -28,8 +29,10 @@ LSHIFT = "LSHIFT"
 RSHIFT = "RSHIFT"
 INCREMENT = "INCREMENT"
 MULTIPLYLIST = "MULTIPLYLIST"
+EMPTY = "EMPTY"
+CONCAT = "CONCAT"
 
-ALLOPS = [NUM, FALSE_exp, VAR, LIST, PLUS, TIMES, LT, AND, NOT, ITE, LENGTH, REVERSE, SORT, TAIL, HEAD, MAX, MIN, LSHIFT, RSHIFT, INCREMENT, MULTIPLYLIST]
+ALLOPS = [NUM, FALSE_exp, VAR, LIST, PLUS, TIMES, LT, AND, OR, NOT, ITE, LENGTH, REVERSE, SORT, TAIL, HEAD, MAX, MIN, LSHIFT, RSHIFT, INCREMENT, MULTIPLYLIST, EMPTY, CONCAT]
 
 class Error(Exception):
     def __init__(self, message):
@@ -71,7 +74,6 @@ class Var(Node):
     def interpret(self, envt):
         return envt[self.name]
 
-
 class Num(Node):
     def __init__(self, val):
         self.type = NUM
@@ -92,6 +94,27 @@ class List(Node):
                 self.list.append(Num(x))
             else:
                 raise Error("Invalid List Element Type")
+
+    def __str__(self):
+        ret = '['
+        for x in self.list:
+            ret += str(x)
+            ret += ', '
+        ret += "]"
+        return ret
+
+    def interpret(self, envt):
+        ret = []
+        for x in self.list:
+            ret.append(x.interpret(envt))
+        return ret
+
+class ZeroList(Node):
+    def __init__(self, size):
+        self.type = LIST
+        self.list = []
+        for x in range(0, size):
+            self.list.append(Num(0))
 
     def __str__(self):
         ret = '['
@@ -154,6 +177,18 @@ class And(Node):
 
     def interpret(self, envt):
         return self.left.interpret(envt) and self.right.interpret(envt)
+
+class Or(Node):
+    def __init__(self, left, right):
+        self.type = OR
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+        return "(" + str(self.left) + "||" + str(self.right) + ")"
+
+    def interpret(self, envt):
+        return self.left.interpret(envt) or self.right.interpret(envt)
 
 class Not(Node):
     def __init__(self, left):
@@ -340,6 +375,29 @@ class MultiplyList(Node):
         for x in self.list:
             ret.append(x.interpret(envt) * self.num) 
         return ret
+
+class IsEmpty(Node):
+    def __init__(self, list):
+        self.type = EMPTY
+        self.list = list
+
+    def __str__(self):
+        return "(isEmpty(" + str(self.list)+ "))"
+
+    def interpret(self, envt):
+        return len(self.list) == 0
+
+class Concat(Node):
+    def __init__(self, list1, list2):
+        self.type = CONCAT
+        self.list1 = list1
+        self.list2 = list2
+
+    def __str__(self):
+        return "(concat(" + str(self.list1) + ',' + str(self.list2) +  "))"
+
+    def interpret(self, envt):
+        return (self.list1.interpret(envt)) + (self.list2.interpret(envt))
 
 def isCorrect(program, inputoutputs):
     count = 0
