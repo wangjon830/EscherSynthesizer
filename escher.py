@@ -7,6 +7,20 @@ class GoalGraph():
         self.E = {}
         self.root = []
 
+
+class Resolver():
+    def __init__(self):
+        self.ifgoal = []
+        self.ifSat = None
+
+        self.thengoal = []
+        self.thenSat = None
+
+        self.elsegoal = []
+        self.elseSat = None
+
+memo = []
+branches = []
 def testProgram(syn, inputoutputs):
     for program in syn:
         count = 0
@@ -164,11 +178,59 @@ def elimEquvalent(plist, inputoutputs):
             newList.append(term)
     return newList
 
-def splitgoal():
-    return
+def splitgoal(syn, goalGraph, inputoutputs):
+    for program in syn:
+        progGoal = ["F", "F", "F"]
 
-def resolve():
-    return
+        index = 0
+        while index < len(memo[program]):
+            if memo[program][index] == goalGraph.root[index]:
+                progGoal[index] = "T"
+
+        if progGoal not in branches:
+            newResolver = Resolver()
+            newResolver.ifgoal = progGoal
+            thenVector = []
+            elseVector = []
+
+            index = 0
+            while index < len(progGoal):
+                if progGoal[index] == "T":
+                    thenVector[index] = goalGraph.root[index]
+                    elseVector[index] = "?"
+                else:
+                    thenVector[index] = "?"
+                    elseVector[index] = goalGraph.root[index]
+
+            newResolver.thengoal = thenVector
+            newResolver.thenSat = program
+            newResolver.elsegoal = elseVector
+            goalGraph.R.add(newResolver)
+
+
+def match(program, goal):
+    index = 0
+    while index < len(program):
+        if goal[index] == "?":
+            index += 1
+            continue
+        if goal[index] != program[index]:
+            return False
+        index += 1
+    return True
+
+def resolve(syn, goalGraph):
+    for r in goalGraph.R:
+        for program in syn:
+            if match(memo[program], r.ifgoal):
+                r.ifSat = program
+            if match(memo[program], r.thengoal):
+                r.thenSat = program
+            if match(memo[program], r.elsegoal):
+                r.elseSat = program
+        if r.ifSat is not None and r.thenSat is not None and r.elseSat is not None:
+            return r
+    return None
 
 def saturate():
     return
