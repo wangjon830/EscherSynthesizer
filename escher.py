@@ -1,11 +1,12 @@
-import structures.py
+import structures as ops
+import forward_search as fs
 
 class GoalGraph():
     def __init__(self):
-        self.G = {self.root}
-        self.R = {}
-        self.E = {}
         self.root = []
+        self.G = [self.root]
+        self.R = []
+        self.E = []
 
 
 class Resolver():
@@ -36,130 +37,6 @@ def testProgram(syn, inputoutputs):
             return program
     return None
 
-def forward(syn, ops):
-    newSyn = []
-    for op in ops:
-        if op == PLUS or op == TIMES:
-            for p in syn:
-                typep = p.type
-                if typep == ITE or typep == TIMES or typep == PLUS:
-                    for term in syn:
-                        type2 = term.type
-                        if type2 == ITE or type2 == TIMES or type2 == PLUS or type2 == LENGTH or type2 == HEAD or type2 == TAIL or type2 == MAX or type2 == MIN:
-                            if op == PLUS:
-                                newSyn.append(Plus(p, term))
-                            else:
-                                newSyn.append(Times(p, term))
-
-        elif op == ITE:
-            for p in syn:
-                typep = p.type
-                if typep == AND or typep == NOT or typep == LT:
-                    for term in syn:
-                        type2 = term.type
-                        if type2 == ITE or type2 == TIMES or type2 == PLUS or type2 == LENGTH or type2 == HEAD or type2 == TAIL or type2 == MAX or type2 == MIN:
-                            for term2 in syn:
-                                type3 = term2.type
-                                if type3 == ITE or type3 == TIMES or type3 == PLUS or type3 == LENGTH or type3 == HEAD or type3 == TAIL or type3 == MAX or type3 == MIN:
-                                    newSyn.append(Ite(p, term, term2))
-        
-        elif op == AND:
-            for p in syn:
-                typep = p.type
-                if typep == AND or typep == NOT or typep == LT or typep == FALSE_exp:
-                    for term in syn:
-                        type2 = term.type
-                        if type2 == AND or type2 == NOT or type2 == LT or type2 == FALSE_exp:
-                            newSyn.append(And(p, term))
-
-        elif op == NOT:
-            for p in syn:
-                typep = p.type
-                if typep == AND or typep == NOT or typep == LT or typep == FALSE_exp:
-                    newSyn.append(Not(p))
-
-        elif op == LT:
-            for p in syn:
-                typep = p.type
-                if typep == ITE or typep == TIMES or typep == PLUS or typep == VAR or typep == NUM:
-                    for term in syn:
-                        type2 = term.type
-                        if type2 == ITE or type2 == TIMES or type2 == PLUS or type2 == LENGTH or type2 == HEAD or type2 == TAIL or type2 == MAX or type2 == MIN:
-                            newSyn.append(Lt(p, term) )
-        
-        elif bool == LENGTH:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Length(p))
-
-        elif bool == REVERSE:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Reverse(p))
-         
-         elif bool == SORT:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Sort(p))
-        
-        elif bool == LSHIFT:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Lshift(p))
-
-        elif bool == RSHIFT:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Rshift(p))
-
-        elif bool == INCREMENT:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Increment(p))
-                    
-        elif bool == MULTIPLYLIST:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(MultiplyList(p))
-
-        elif bool == MAX:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Max(p))
-                    
-        elif bool == MIN:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Min(p))
-                    
-
-        elif bool == HEAD:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Head(p))
-
-
-        elif bool == TAIL:
-            for p in syn:
-                typep = p.type
-                if typep == LIST or typep == SORT or typep == LSHIFT or typep == RSHIFT or typep == INCREMENT or typep == MULTIPLYLIST:
-                    newSyn.append(Tail(p))
-    """
-        check op and synthesize programs together
-    """
-    return newSyn
-
-
 def elimEquvalent(plist, inputoutputs):
     newList = []
     for term in plist:
@@ -178,34 +55,47 @@ def elimEquvalent(plist, inputoutputs):
             newList.append(term)
     return newList
 
-def splitgoal(syn, goalGraph, inputoutputs):
+def splitgoal(syn, goalGraph):
     for program in syn:
-        progGoal = ["F", "F", "F"]
-
-        index = 0
-        while index < len(memo[program]):
-            if memo[program][index] == goalGraph.root[index]:
-                progGoal[index] = "T"
-
-        if progGoal not in branches:
-            newResolver = Resolver()
-            newResolver.ifgoal = progGoal
-            thenVector = []
-            elseVector = []
+        for goal in goalGraph.G:
+            progGoal = []
 
             index = 0
-            while index < len(progGoal):
-                if progGoal[index] == "T":
-                    thenVector[index] = goalGraph.root[index]
-                    elseVector[index] = "?"
+            while index < len(memo[program]):
+                if goal[index] == "?" or memo[program][index] == goal[index]:
+                    progGoal[index] = True
                 else:
-                    thenVector[index] = "?"
-                    elseVector[index] = goalGraph.root[index]
+                    progGoal[index] = False
 
-            newResolver.thengoal = thenVector
-            newResolver.thenSat = program
-            newResolver.elsegoal = elseVector
-            goalGraph.R.add(newResolver)
+            if progGoal not in branches:
+                newResolver = Resolver()
+                newResolver.ifgoal = progGoal
+                thenVector = []
+                elseVector = []
+
+                index = 0
+                while index < len(progGoal):
+                    if progGoal[index]:
+                        thenVector[index] = goalGraph.root[index]
+                        elseVector[index] = "?"
+                    else:
+                        thenVector[index] = "?"
+                        elseVector[index] = goalGraph.root[index]
+
+                newResolver.thengoal = thenVector
+                newResolver.thenSat = program
+                newResolver.elsegoal = elseVector
+
+                goalGraph.R.add(newResolver)
+
+                goalGraph.G.add(progGoal)
+                goalGraph.G.add(thenVector)
+                goalGraph.G.add(elseVector)
+
+                goalGraph.E.add((progGoal, newResolver))
+                goalGraph.E.add((thenVector, newResolver))
+                goalGraph.E.add((elseVector, newResolver))
+                goalGraph.E.add((newResolver, goal))
 
 
 def match(program, goal):
@@ -235,15 +125,46 @@ def resolve(syn, goalGraph):
 def saturate():
     return
 
-def escher(syn, goalGraph, ops, inputoutputs, iterations):
-    for inputoutput in inputoutputs:  # Init
-        syn.append(inputoutput[0])
-        goalGraph.root.append(inputoutput[1])
+def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
+    oracleInputs = []
+    for var in vars:
+        oracleInputs.append(var["type"])
+    oracleOutput = type(inputoutputs[0]["_out"])
+    oracleInfo = {"fun": oracleFun, "inputs": oracleInputs, "output": oracleOutput}
 
-    iter = 1
+    plist = fs.initplist(vars, consts, intOps, boolOps, listOps)
 
-    while iter < iterations:
-        syn = forward(syn, ops)
-        prog = testProgram(syn, inputoutputs)
-        if prog is not None:
-            return prog
+    plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo)
+    plist = fs.elimEquivalents(plist, inputoutputs)
+    splitgoal(plist, goalGraph)
+    resolve(syn, goalGraph)
+    for r in goalGraph.R:
+        print(r.ifgoal)
+        print(r.thengoal)
+        print(r.elsegoal)
+        print(r.ifSat)
+        print(r.thenSat)
+        print(r.elseSat)
+
+
+if __name__ == "__main__":
+    def length(l):
+        return len(l[0])
+    gr = GoalGraph()
+    gr.root = [4, 4]
+
+    escher(
+        [],
+        gr,
+        [ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD],
+        # [ops.DECNUM],
+        [ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        # [],
+        [ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        # [],
+        [{"name": "x", "type": list}, {"name": "y", "type": int}],
+        [],
+        [{"x": [5, 1, 2, 3], "y": 3, "_out": 4}, {"x": [1, 1, 2, 3], "y": 2, "_out": 4}],
+        length
+    )
+
