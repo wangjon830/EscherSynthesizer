@@ -2,8 +2,8 @@ import structures as ops
 import forward_search as fs
 
 class GoalGraph():
-    def __init__(self):
-        self.root = []
+    def __init__(self, root):
+        self.root = root
         self.G = [self.root]
         self.R = []
         self.E = []
@@ -20,7 +20,7 @@ class Resolver():
         self.elsegoal = []
         self.elseSat = None
 
-memo = []
+memo = {}
 branches = []
 def testProgram(syn, inputoutputs):
     for program in syn:
@@ -55,68 +55,65 @@ def elimEquvalent(plist, inputoutputs):
             newList.append(term)
     return newList
 
-def splitgoal(syn, goalGraph):
+def splitgoal(syn, goalGraph, inputoutputs):
     for program in syn:
         for goal in goalGraph.G:
-            progGoal = []
+            progGoal = [None]*len(inputoutputs)
 
-            index = 0
-            while index < len(memo[program]):
-                if goal[index] == "?" or memo[program][index] == goal[index]:
+            for index, input in enumerate(inputoutputs):
+                if goal[index] == '?' or program.interpret(input) == goal[index]:
                     progGoal[index] = True
                 else:
-                    progGoal[index] = False
+                    progGoal[index] = False 
 
-            if progGoal not in branches:
+            if progGoal not in goalGraph.G:
                 newResolver = Resolver()
                 newResolver.ifgoal = progGoal
-                thenVector = []
-                elseVector = []
+                thenVector = [None]*len(inputoutputs)
+                elseVector = [None]*len(inputoutputs)
 
                 index = 0
                 while index < len(progGoal):
                     if progGoal[index]:
-                        thenVector[index] = goalGraph.root[index]
+                        thenVector[index] = goal[index]
                         elseVector[index] = "?"
                     else:
                         thenVector[index] = "?"
-                        elseVector[index] = goalGraph.root[index]
+                        elseVector[index] = goal[index]
+                    index += 1
 
                 newResolver.thengoal = thenVector
                 newResolver.thenSat = program
                 newResolver.elsegoal = elseVector
 
-                goalGraph.R.add(newResolver)
+                goalGraph.R.append(newResolver)
 
-                goalGraph.G.add(progGoal)
-                goalGraph.G.add(thenVector)
-                goalGraph.G.add(elseVector)
+                goalGraph.G.append(progGoal)
+                goalGraph.G.append(thenVector)
+                goalGraph.G.append(elseVector)
 
-                goalGraph.E.add((progGoal, newResolver))
-                goalGraph.E.add((thenVector, newResolver))
-                goalGraph.E.add((elseVector, newResolver))
-                goalGraph.E.add((newResolver, goal))
+                goalGraph.E.append((progGoal, newResolver))
+                goalGraph.E.append((thenVector, newResolver))
+                goalGraph.E.append((elseVector, newResolver))
+                goalGraph.E.append((newResolver, goal))
 
 
-def match(program, goal):
-    index = 0
-    while index < len(program):
-        if goal[index] == "?":
-            index += 1
+def match(program, goal, inputoutputs):
+    for index, input in enumerate(inputoutputs):
+        if(goal[index] == '?'):
             continue
-        if goal[index] != program[index]:
+        if(goal[index] != program.interpret(input)):
             return False
-        index += 1
     return True
 
-def resolve(syn, goalGraph):
+def resolve(syn, goalGraph, inputoutputs):
     for r in goalGraph.R:
         for program in syn:
-            if match(memo[program], r.ifgoal):
+            if match(program, r.ifgoal, inputoutputs):
                 r.ifSat = program
-            if match(memo[program], r.thengoal):
+            if match(program, r.thengoal, inputoutputs):
                 r.thenSat = program
-            if match(memo[program], r.elsegoal):
+            if match(program, r.elsegoal, inputoutputs):
                 r.elseSat = program
         if r.ifSat is not None and r.thenSat is not None and r.elseSat is not None:
             return r
@@ -128,43 +125,53 @@ def saturate():
 def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     oracleInputs = []
     for var in vars:
-        oracleInputs.append(var["type"])
+        oracleInputs.append(var)
     oracleOutput = type(inputoutputs[0]["_out"])
     oracleInfo = {"fun": oracleFun, "inputs": oracleInputs, "output": oracleOutput}
 
     plist = fs.initplist(vars, consts, intOps, boolOps, listOps)
 
-    plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo)
-    plist = fs.elimEquivalents(plist, inputoutputs)
-    splitgoal(plist, goalGraph)
-    resolve(syn, goalGraph)
-    for r in goalGraph.R:
-        print(r.ifgoal)
-        print(r.thengoal)
-        print(r.elsegoal)
-        print(r.ifSat)
-        print(r.thenSat)
-        print(r.elseSat)
+    ans = None
+    level = 1
+    while(ans == None):
+        print(level)
+        plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo, level)
+        plist = fs.elimEquivalents(plist, inputoutputs, oracleInfo)
+        for prog in plist[0]+plist[1]+plist[2]:
+            if("tail" in str(prog)):
+                print(prog)
+        splitgoal(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
+        ans = resolve(syn, goalGraph, inputoutputs)
+        level += 1
+        for r in goalGraph.R:
+            new_str = ''
+            new_str += str(r.ifgoal) + ' '
+            new_str += str(r.ifSat) + ' '
+            new_str += str(r.thengoal) + ' '
+            new_str += str(r.ifSat) + ' '
+
+            new_str += str(r.elsegoal) + ' '
+            new_str += str(r.elseSat) + ' '
+
+            print(new_str)
 
 
 if __name__ == "__main__":
     def length(l):
         return len(l[0])
-    gr = GoalGraph()
-    gr.root = [4, 4]
-
+    gr = GoalGraph([4,2,1,0])
     escher(
         [],
         gr,
-        [ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD],
-        # [ops.DECNUM],
-        [ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
-        # [],
-        [ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
-        # [],
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD],
+        [ops.INCNUM, ops.ZERO],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL],
         [{"name": "x", "type": list}, {"name": "y", "type": int}],
         [],
-        [{"x": [5, 1, 2, 3], "y": 3, "_out": 4}, {"x": [1, 1, 2, 3], "y": 2, "_out": 4}],
+        [{"x": [5, 1, 2, 3], "y": 3, "_out": 4}, {"x": [2,3], "y": 2, "_out": 2}, {"x": [1], "y": 2, "_out": 1}, {"x": [], "y": 2, "_out": 0}],
         length
     )
 

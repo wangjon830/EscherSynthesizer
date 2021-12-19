@@ -26,17 +26,19 @@ def initplist(vars, consts, intOps, boolOps, listOps):
     return [newInts, newLists, newBools]
 
 def heuristic(prog):
-    val = 1
+    vals = []
     for key in prog.__dict__:
+        val = 1
         if(isinstance(prog.__dict__[key], ops.Node)):
             val += heuristic(prog.__dict__[key])
         elif(isinstance(prog.__dict__[key], list)):
             for p in prog.__dict__[key]:
                 if(isinstance(p, ops.Node)):
                     val += heuristic(p)
-    return val
+        vals.append(val)
+    return max(vals)
 
-def grow(plist, intOps, boolOps, listOps, oracleInfo):
+def grow(plist, intOps, boolOps, listOps, oracleInfo, heurlevel):
     newInts, newLists, newBools = [], [], []
 
     selfInputs = None
@@ -59,73 +61,113 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo):
         for j in range(0, len(selfInputs)):
             arg = []
             if(isinstance(selfInputs[j], list)):
-                print('test')
                 for el in selfInputs[j]:
                     if(isinstance(el, list)):
                         arg += el
                     else:
                         arg.append(el)
                 selfInputs[j] = arg
-    for args in selfInputs:
-        if(len(oracleInfo["inputs"]) == 1):
-            args = [args]
-        if(oracleInfo["output"] == int):
-            newInts.append(ops.Self(oracleInfo, args))
-        elif(oracleInfo["output"] == list):
-            newLists.append(ops.Self(oracleInfo, args))
-        elif(oracleInfo["output"] == bool):
-            newBools.append(ops.Self(oracleInfo, args))
+    if(selfInputs != None):
+        for args in selfInputs:
+            if(len(oracleInfo["inputs"]) == 1):
+                args = [args]
+            new_prog = ops.Self(oracleInfo, args)
+            if(heuristic(new_prog) <= heurlevel):
+                if(oracleInfo["output"] == int):
+                    newInts.append(new_prog)
+                elif(oracleInfo["output"] == list):
+                    newLists.append(new_prog)
+                elif(oracleInfo["output"] == bool):
+                    newBools.append(new_prog)
 
     
     for intProg1 in plist[0]:
         if ops.ISNEGATIVE in boolOps:
-            newBools.append(ops.IsNegative(intProg1))
+            new_prog = ops.IsNegative(intProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newBools.append(new_prog)
         if ops.INCNUM in intOps:
-            newInts.append(ops.IncrementNum(intProg1))
+            new_prog = ops.IncrementNum(intProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newInts.append(new_prog)
         if ops.DECNUM in intOps:
-            newInts.append(ops.DecrementNum(intProg1))
+            new_prog = ops.DecrementNum(intProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newInts.append(new_prog)
         if ops.NEG in intOps:
-            newInts.append(ops.Neg(intProg1))
+            new_prog = ops.Neg(intProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newInts.append(new_prog)
         if ops.DIV2 in intOps:
-            newInts.append(ops.Div2(intProg1))
+            new_prog = ops.Div2(intProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newInts.append(new_prog)
         if ops.ZEROLIST in listOps:
-            newLists.append(ops.ZeroList(intProg1))
+            new_prog = ops.ZeroList(intProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newLists.append(new_prog)
         
         for intProg2 in plist[0]:
             if ops.PLUS in intOps:
-                newInts.append(ops.Plus(intProg1, intProg2))
+                new_prog = ops.Plus(intProg1, intProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newInts.append(new_prog)
             if ops.MINUS in intOps:
-                newInts.append(ops.Minus(intProg1, intProg2))
+                new_prog = ops.Minus(intProg1, intProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newInts.append(new_prog)
             if ops.TIMES in intOps and intProg1.type == ops.INTVAR:
-                newInts.append(ops.Times(intProg1, intProg2))
+                new_prog = ops.Times(intProg1, intProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newInts.append(new_prog)
             if ops.LT in boolOps:
-                newBools.append(ops.Lt(intProg1, intProg2))
+                new_prog = ops.Lt(intProg1, intProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newBools.append(new_prog)
             if ops.EQUAL in boolOps:
-                newBools.append(ops.Equals(intProg1, intProg2))
+                new_prog = ops.Equals(intProg1, intProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newBools.append(new_prog)
         
         for listProg1 in plist[1]:
             if ops.CONS in listOps:
-                newLists.append(ops.Cons(intProg1, listProg1))
+                new_prog = ops.Cons(intProg1, listProg1)
+                if(heuristic(new_prog) <= heurlevel):
+                    newLists.append(new_prog)
 
     for listProg1 in plist[1]:
         if ops.ISEMPTY in boolOps:
-            newBools.append(ops.IsEmpty(listProg1))
+            new_prog = ops.IsEmpty(listProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newBools.append(new_prog)
         if ops.INCLIST in listOps:
-            newLists.append(ops.IncrementList(listProg1))
+            new_prog = ops.IncrementList(listProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newLists.append(new_prog)
         if ops.DECLIST in listOps:
-            newLists.append(ops.DecrementList(listProg1))
+            new_prog = ops.DecrementList(listProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newLists.append(new_prog)
         if ops.HEAD in intOps:
-            newInts.append(ops.Head(listProg1))
+            new_prog = ops.Head(listProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newInts.append(new_prog)
         if ops.TAIL in listOps:
-            newLists.append(ops.Tail(listProg1))
+            new_prog = ops.Tail(listProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newLists.append(new_prog)
         
         for listProg2 in plist[1]:
             if ops.CONCAT in listOps:
-                newLists.append(ops.Concat(listProg1, listProg2))
+                new_prog = ops.Concat(listProg1, listProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newLists.append(new_prog)
 
     for boolProg1 in plist[2]:
         if ops.NOT in boolOps:
-            newBools.append(ops.Not(boolProg1))
+            new_prog = ops.Not(boolProg1)
+            if(heuristic(new_prog) <= heurlevel):
+                newBools.append(new_prog)
                       
     plist[0] += newInts
     plist[1] += newLists
@@ -164,13 +206,15 @@ def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     oracleInfo = {"fun":oracleFun, "inputs":oracleInputs, "output":oracleOutput}
 
     plist = initplist(vars, consts, intOps, boolOps, listOps)
-    #print(opListToString(plist[0]+plist[1]+plist[2]))
-    
-    iters = 3
-    for x in range(0, iters):
-        plist = grow(plist, intOps, boolOps, listOps, oracleInfo)
-        plist = elimEquivalents(plist, inputoutputs, oracleInfo)
     print(opListToString(plist[0]+plist[1]+plist[2]))
+
+    iters = 4
+    baseHeur = 1
+    for x in range(baseHeur+1, iters+baseHeur+1):
+        plist = grow(plist, intOps, boolOps, listOps, oracleInfo, x)
+        plist = elimEquivalents(plist, inputoutputs, oracleInfo)
+        #print(opListToString(plist[0]+plist[1]+plist[2]))
+
 
     #print(opListToString(plist[0]+plist[1]+plist[2]))
     #print(len(plist[0]+plist[1]+plist[2]))
@@ -178,15 +222,21 @@ def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
         res = ''
         [out, correct] = ops.getOutput(prog, inputoutputs)
         res += str(out) + ' ' + str(correct)
-        print(str(prog) + " " + res)
+        #print(str(prog) + " " + res)
     #print(str(prog) + ' ' + str(heuristic(prog)))
     
+    #testRec = ops.Plus(ops.Div2(ops.IntVar('a')), ops.Times(ops.IntVar('b'), ops.IntVar('c')))
+    #print(ops.getRecursiveCall(testRec))
+
     #testP = ops.Div2(ops.Self(oracleInfo, [ops.Concat(ops.ListVar('b'), ops.ListVar('b')), ops.IntVar('a')]))
+    #print(ops.getRecursiveCall(testP))
     #print(str(testP) + ': ' + str(ops.checkRecurse(testP, inputoutputs, oracleInfo)))
-    #correctLength = ops.Ite(ops.IsEmpty(ops.ListVar('b')), ops.Zero(), ops.IncrementNum(ops.Self(oracleInfo, [ops.Tail(ops.ListVar('b')), ops.IntVar('a')])))
+    correctLength = ops.Ite(ops.IsEmpty(ops.ListVar('x')), ops.Zero(), ops.IncrementNum(ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x')), ops.IntVar('y')])))
+    print(ops.testRecurse(correctLength, inputoutputs, oracleInfo))
     #print(str(correctLength) + ': ' + str(ops.checkRecurse(correctLength, inputoutputs, oracleInfo)))
 
-    #nonTerminatingLength = ops.Self(oracleInfo, [ops.ListVar('b'), ops.IntVar('a')])
+    nonTerminatingLength = ops.Self(oracleInfo, [ops.ListVar('x'), ops.IntVar('y')])
+    print(ops.testRecurse(nonTerminatingLength, inputoutputs, oracleInfo))
     #print(str(nonTerminatingLength) + ': ' +  str(ops.checkRecurse(nonTerminatingLength, inputoutputs, oracleInfo)))
 
 
@@ -202,8 +252,8 @@ if __name__ == "__main__":
         [ops.ISEMPTY],
         #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
         [ops.TAIL],
-        [{"name":"b", "type": list}],
+        [{"name": "x", "type": list}, {"name": "y", "type": int}],
         [],
-        [{"b":[5,1,2,3], "_out":4},{"b":[1,1,2], "_out":3}, {"b":[1], "_out":1}, {"b":[], "_out":0}],
+        [{"x":[5,1,2,3],"y":3, "_out":4},{"x":[1,1,2],"y":3, "_out":3}, {"x":[1],"y":3, "_out":1}, {"x":[],"y":3, "_out":0}],
         length
     )

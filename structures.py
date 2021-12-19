@@ -717,6 +717,52 @@ def getOutput(program, inputoutputs):
         bool_vect.append(type(out) == type(inputoutput['_out']) and out == inputoutput['_out'])
     return [out_vect, bool_vect]
 
+def getRecursiveCall(program):
+    if(isinstance(program, Self)):
+        return program
+        
+    for key in program.__dict__:
+        if(isinstance(program.__dict__[key], Self)):
+            return program.__dict__[key]
+        elif(isinstance(program.__dict__[key], Node)):
+            rec = getRecursiveCall(program.__dict__[key])
+            if(isinstance(rec, Self)):
+                return rec
+    return None
+
+def getSatAndTest(program, recursiveCall, input, oracleInfo, depth, thresh):
+    new_input_dict = {}
+    new_input_arr = []
+    for i, var in enumerate(recursiveCall.right):
+        # Base case handling
+        if(var.interpret(input) == 'ERROR'):
+            return True
+        if(isinstance(var.interpret(input), list) and len(var.interpret(input)) == 0):
+            return True
+        if(depth >= thresh):
+            return False
+        ret = var.interpret(input)
+        new_input_dict[list(input.keys())[i]] = ret
+        new_input_arr.append(ret)
+    print(str(new_input_dict) + ' ')
+    if(oracleInfo['fun'](new_input_arr) != program.interpret(new_input_dict)):
+        print(str(new_input_dict) + ' ')
+        return False
+    return True and getSatAndTest(program, recursiveCall, new_input_dict, oracleInfo, depth+1, thresh)
+
+def testRecurse(program, inputoutputs, oracleInfo):
+    rec = getRecursiveCall(program)
+    if(rec == None):
+        return False
+    
+    for input in inputoutputs:
+        if(input['_out'] != program.interpret(input)):
+            return False
+        if not getSatAndTest(program, rec, input, oracleInfo, 0, 10):
+            return False
+        
+    return True
+
 def isCorrect(program, inputoutputs):
     count = 0
     for i, inputoutput in enumerate(inputoutputs):
