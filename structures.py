@@ -64,19 +64,24 @@ class Error(Exception):
 
 class Node:
     def __init__(self):
-        self.inputoutputs = []
+        self.inputoutputs = {}
 
     def memoize(self, input, output):
-        self.inputoutputs.append([input,output])
+        if(self.inputoutputs != None):
+            self.inputoutputs[str(input)] = output
 
     def checkMem(self, input):
-        for inputoutput in self.inputoutputs:
-            if(inputoutput[0] == input):
-                return inputoutput[1]
+        if(self.inputoutputs != None):
+            for inputoutput in self.inputoutputs.keys():
+                if(inputoutput == str(input)):
+                    return self.inputoutputs[inputoutput]
         return None
             
     def __str__(self):
         raise Error("Unimplemented method: str()")
+
+    def __hash__(self):
+        return hash(str(self))
 
     def interpret(self):
         raise Error("Unimplemented method: interpret()")
@@ -139,30 +144,6 @@ class Num(Node):
     def interpret(self, envt):
         return self.val
 
-class Self(Node):
-    def __init__(self, val, args):
-        super().__init__()
-        self.type = NUM
-        self.left = val
-        self.right = args
-
-    def __str__(self):
-        right = "["
-        for prog in self.right:
-            right += str(prog)
-            right += ", "
-        right += "]"
-        return "(" + str(self.left.__name__) + "(" + right + "))"
-
-    def interpret(self, envt):
-        args = []
-        for prog in self.right:
-            if(prog.interpret(envt) == "ERROR"): return "ERROR"
-            args.append(prog.interpret(envt))
-
-        self.memoize(envt, self.left(args))
-        return self.left(args)
-
 class Zero(Node):
     def __init__(self):
         super().__init__()
@@ -189,9 +170,10 @@ class ZeroList(Node):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
         
-        if(self.val.interpret(envt) != "ERROR"):
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
             ret = []
-            for x in range(0, int(self.val.interpret(envt))):
+            for x in range(0, int(val)):
                 ret.append(0)
 
             self.memoize(envt, ret)
@@ -212,9 +194,13 @@ class Plus(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) + self.right.interpret(envt))
-            return self.left.interpret(envt) + self.right.interpret(envt)
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left + right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -231,9 +217,13 @@ class Minus(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) - self.right.interpret(envt))
-            return self.left.interpret(envt) - self.right.interpret(envt)
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left-right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -250,9 +240,13 @@ class Times(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) * self.right.interpret(envt))
-            return self.left.interpret(envt) * self.right.interpret(envt)
+            
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left*right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -269,9 +263,13 @@ class Lt(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) < self.right.interpret(envt))
-            return self.left.interpret(envt) < self.right.interpret(envt)
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left < right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -288,9 +286,13 @@ class And(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) and self.right.interpret(envt))
-            return self.left.interpret(envt) and self.right.interpret(envt)
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left and right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -307,9 +309,13 @@ class Or(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) or self.right.interpret(envt))
-            return self.left.interpret(envt) or self.right.interpret(envt)
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left or right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -325,9 +331,12 @@ class Not(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            self.memoize(envt, not self.val.interpret(envt))
-            return not self.val.interpret(envt)
+        
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = not val
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -344,9 +353,13 @@ class Equals(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.left.interpret(envt) == self.right.interpret(envt))
-            return self.left.interpret(envt) == self.right.interpret(envt)
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt) 
+        if(left != "ERROR" and right != "ERROR"):
+            ret = left == right
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
         
@@ -363,9 +376,12 @@ class IsNegative(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.val.interpret(envt) < 0)
-            return self.val.interpret(envt) < 0
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = val < 0
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -381,9 +397,12 @@ class Neg(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.val.interpret(envt)*-1)
-            return self.val.interpret(envt)*-1
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = val*-1
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
         
@@ -400,9 +419,12 @@ class Div2(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            self.memoize(envt, self.val.interpret(envt)/2)
-            return self.val.interpret(envt)/2
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = val/2
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
         
@@ -419,9 +441,12 @@ class IsEmpty(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            self.memoize(envt, len(self.val.interpret(envt)) == 0)
-            return len(self.val.interpret(envt)) == 0
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = len(val) == 0
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
         
@@ -439,13 +464,21 @@ class Ite(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.cond.interpret(envt) != "ERROR" and self.tcase.interpret(envt) != "ERROR" and self.fcase.interpret(envt) != "ERROR"):
-            if (self.cond.interpret(envt)):
-                self.memoize(envt, self.tcase.interpret(envt))
-                return self.tcase.interpret(envt)
+
+        cond = self.cond.interpret(envt)
+        tcase = self.tcase.interpret(envt)
+        fcase = self.fcase.interpret(envt)
+        if(cond != "ERROR"):
+            if (cond):
+                if(tcase == "ERROR"): return "ERROR"
+                ret = tcase
+                self.memoize(envt, ret)
+                return ret
             else:
-                self.memoize(envt, self.fcase.interpret(envt))
-                return self.fcase.interpret(envt)
+                if(fcase == "ERROR"): return "ERROR"
+                ret = fcase
+                self.memoize(envt, ret)
+                return ret
         else:
             return "ERROR"
 
@@ -463,16 +496,15 @@ class IncrementList(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) == "ERROR"):
+
+        val = self.val.interpret(envt)
+        if(val == "ERROR"):
             return "ERROR"
 
         ret = []
-        for x in self.val.interpret(envt):
+        for x in val:
             if(x == "ERROR"): return "ERROR"
-            if(isinstance(x, str)):
-                print(x)
-            else:
-                ret.append(x + 1)
+            ret.append(x + 1)
         self.memoize(envt, ret)
         return ret
 
@@ -488,8 +520,10 @@ class IncrementNum(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            ret = self.val.interpret(envt)+1
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = val+1
             self.memoize(envt, ret)
             return ret       
         else:
@@ -507,11 +541,13 @@ class DecrementList(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) == "ERROR"):
+
+        val = self.val.interpret(envt)
+        if(val == "ERROR"):
             return "ERROR"
 
         ret = []
-        for x in self.val.interpret(envt):
+        for x in val:
             if(x == "ERROR"): return "ERROR"
             ret.append(x - 1)
         self.memoize(envt, ret)
@@ -529,8 +565,10 @@ class DecrementNum(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR"):
-            ret = self.val.interpret(envt)-1
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = val-1
             self.memoize(envt, ret)
             return ret
         else:
@@ -552,7 +590,7 @@ class EmptyList(Node):
 class Cons(Node):
     def __init__(self, left, right):
         super().__init__()
-        self.type = CONCAT
+        self.type = CONS
         self.left = left
         self.right = right
 
@@ -562,14 +600,17 @@ class Cons(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
             ret = []
-            ret.append(self.left.interpret(envt))
+            ret.append(left)
 
             if(self.right.type in intOps or self.right.type in boolOps):
-                ret.append(self.right.interpret(envt))
+                ret.append(right)
             elif(self.right.type in listOps):
-                ret += self.right.interpret(envt)
+                ret += right
             self.memoize(envt, ret)
             return ret
         else:
@@ -588,10 +629,13 @@ class Concat(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.left.interpret(envt) != "ERROR" and self.right.interpret(envt) != "ERROR"):
+
+        left = self.left.interpret(envt)
+        right = self.right.interpret(envt)
+        if(left != "ERROR" and right != "ERROR"):
             ret = []
-            ret += self.left.interpret(envt)
-            ret += self.right.interpret(envt)
+            ret += left
+            ret += right
             self.memoize(envt, ret)
             return ret
         else:
@@ -609,9 +653,12 @@ class Head(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR" and len(self.val.interpret(envt)) > 0):
-            self.memoize(envt, self.val.interpret(envt)[0])
-            return self.val.interpret(envt)[0]
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR" and len(val) > 0):
+            ret = val[0]
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
 
@@ -627,17 +674,54 @@ class Tail(Node):
     def interpret(self, envt):
         if(self.checkMem(envt) != None):
             return self.checkMem(envt)
-        if(self.val.interpret(envt) != "ERROR" and len(self.val.interpret(envt)) > 0):
-            self.memoize(envt, self.val.interpret(envt)[1:])
-            return self.val.interpret(envt)[1:]
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR" and len(val) > 0):
+            ret = val[1:]
+            self.memoize(envt, ret)
+            return ret
         else:
             return "ERROR"
+
+class Self(Node):
+    def __init__(self, val, args):
+        super().__init__()
+        self.type = NUM
+        self.left = val
+        self.right = args
+
+    def __str__(self):
+        right = "["
+        for prog in self.right:
+            right += str(prog)
+            right += ", "
+        right += "]"
+        return "(" + str(self.left["fun"].__name__) + "(" + right + "))"
+
+    def interpret(self, envt):
+        args = []
+
+        for prog in self.right:
+            if(prog.interpret(envt) == "ERROR"): return "ERROR"
+            args.append(prog.interpret(envt))
+        ret = self.left["fun"](args)
+        self.memoize(envt, ret)
+        return ret
+
+def getOutput(program, inputoutputs):
+    out_vect = []
+    bool_vect = []
+    for inputoutput in inputoutputs:
+        out = program.interpret(inputoutput)
+        out_vect.append(out)
+        bool_vect.append(type(out) == type(inputoutput['_out']) and out == inputoutput['_out'])
+    return [out_vect, bool_vect]
 
 def isCorrect(program, inputoutputs):
     count = 0
     for i, inputoutput in enumerate(inputoutputs):
         out = program.interpret(inputoutput)
-        #print (f'{i+1}. Evaluating programs {program}\non inputoutput examples {inputoutput}. The output of the program is {out}\n')
+
         if (out == inputoutput["_out"]):
             count += 1
         else:

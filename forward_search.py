@@ -1,5 +1,4 @@
 import structures as ops
-import time
 import itertools
 
 def initplist(vars, consts, intOps, boolOps, listOps):
@@ -41,34 +40,43 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo):
     newInts, newLists, newBools = [], [], []
 
     selfInputs = None
-    for input in oracleInfo["inputs"]:
-        if(input == int):
+    for i in range(0, len(oracleInfo["inputs"])):
+        if(oracleInfo["inputs"][i]["type"] == int):
             if(selfInputs == None):
                 selfInputs = plist[0]
             else:
-                selfInputs = list(itertools.product(selfInputs, plist[0]))
-        elif(input == list):
+                selfInputs = list(map(lambda x: list(x), list(itertools.product(selfInputs, plist[0]))))
+        elif(oracleInfo["inputs"][i]["type"] == list):
             if(selfInputs == None):
                 selfInputs = plist[1]
             else:
-                selfInputs = list(itertools.product(selfInputs, plist[1]))
-        elif(input == bool):
+                selfInputs = list(map(lambda x: list(x), list(itertools.product(selfInputs, plist[1]))))
+        elif(oracleInfo["inputs"][i]["type"] == bool):
             if(selfInputs == None):
                 selfInputs = plist[2]
             else:
-                selfInputs = list(itertools.product(selfInputs, plist[2]))
+                selfInputs = list(map(lambda x: list(x), list(itertools.product(selfInputs, plist[2]))))
+        for j in range(0, len(selfInputs)):
+            arg = []
+            if(isinstance(selfInputs[j], list)):
+                print('test')
+                for el in selfInputs[j]:
+                    if(isinstance(el, list)):
+                        arg += el
+                    else:
+                        arg.append(el)
+                selfInputs[j] = arg
     for args in selfInputs:
-        if(isinstance(args, tuple)):
-            args = list(args)
-        else:
+        if(len(oracleInfo["inputs"]) == 1):
             args = [args]
         if(oracleInfo["output"] == int):
-            newInts.append(ops.Self(oracleInfo["fun"], args))
+            newInts.append(ops.Self(oracleInfo, args))
         elif(oracleInfo["output"] == list):
-            newLists.append(ops.Self(oracleInfo["fun"], args))
+            newLists.append(ops.Self(oracleInfo, args))
         elif(oracleInfo["output"] == bool):
-            newBools.append(ops.Self(oracleInfo["fun"], args))
+            newBools.append(ops.Self(oracleInfo, args))
 
+    
     for intProg1 in plist[0]:
         if ops.ISNEGATIVE in boolOps:
             newBools.append(ops.IsNegative(intProg1))
@@ -118,19 +126,13 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo):
     for boolProg1 in plist[2]:
         if ops.NOT in boolOps:
             newBools.append(ops.Not(boolProg1))
-        
-        for boolProg2 in plist[2]:
-            if ops.AND in boolOps:
-                newBools.append(ops.And(boolProg1, boolProg2))
-            if ops.OR in boolOps:
-                newBools.append(ops.Or(boolProg1, boolProg2))
-
+                      
     plist[0] += newInts
     plist[1] += newLists
     plist[2] += newBools
     return plist
 
-def elimEquivalents(plist, inputs):
+def elimEquivalents(plist, inputs, oracleInfo):
     newplist = [[],[],[]]
 
     for i in range(0, len(plist)):
@@ -140,7 +142,7 @@ def elimEquivalents(plist, inputs):
             for input in inputs:
                 result += str(p.interpret(input)) + ','
             pHeur = heuristic(p)
-            if(result not in resultHash or resultHash[result][1] > pHeur):
+            if((result not in resultHash or resultHash[result][1] > pHeur)):
                 resultHash[result] = [p, pHeur]
         newplist[i] = [item[0] for item in resultHash.values()]
 
@@ -157,32 +159,35 @@ def opListToString(opList):
 def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     oracleInputs = []
     for var in vars:
-        oracleInputs.append(var["type"])
+        oracleInputs.append(var)
     oracleOutput = type(inputoutputs[0]["_out"])
     oracleInfo = {"fun":oracleFun, "inputs":oracleInputs, "output":oracleOutput}
 
-    tic1 = time.perf_counter()
     plist = initplist(vars, consts, intOps, boolOps, listOps)
-    print(opListToString(plist[0]+plist[1]+plist[2]))
+    #print(opListToString(plist[0]+plist[1]+plist[2]))
     
-    plist = grow(plist, intOps, boolOps, listOps, oracleInfo)
-    #print(opListToString(plist[0]+plist[1]+plist[2]))
-    plist = elimEquivalents(plist, inputoutputs)
-    #print(opListToString(plist[0]+plist[1]+plist[2]))
-
-    plist = grow(plist, intOps, boolOps, listOps, oracleInfo)
-    plist = elimEquivalents(plist, inputoutputs)
-    #print(opListToString(plist[0]+plist[1]+plist[2]))
-    #plist = grow(plist, intOps, boolOps, listOps, oracleInfo)
-    #plist = elimEquivalents(plist, inputoutputs)
+    iters = 3
+    for x in range(0, iters):
+        plist = grow(plist, intOps, boolOps, listOps, oracleInfo)
+        plist = elimEquivalents(plist, inputoutputs, oracleInfo)
+    print(opListToString(plist[0]+plist[1]+plist[2]))
 
     #print(opListToString(plist[0]+plist[1]+plist[2]))
     #print(len(plist[0]+plist[1]+plist[2]))
     for prog in plist[0]+plist[1]+plist[2]:
-        if(ops.isCorrect(prog, inputoutputs)):
-            print(str(prog))
-            print(heuristic(prog))
-        #print(str(prog) + ' ' + str(heuristic(prog)))
+        res = ''
+        [out, correct] = ops.getOutput(prog, inputoutputs)
+        res += str(out) + ' ' + str(correct)
+        print(str(prog) + " " + res)
+    #print(str(prog) + ' ' + str(heuristic(prog)))
+    
+    #testP = ops.Div2(ops.Self(oracleInfo, [ops.Concat(ops.ListVar('b'), ops.ListVar('b')), ops.IntVar('a')]))
+    #print(str(testP) + ': ' + str(ops.checkRecurse(testP, inputoutputs, oracleInfo)))
+    #correctLength = ops.Ite(ops.IsEmpty(ops.ListVar('b')), ops.Zero(), ops.IncrementNum(ops.Self(oracleInfo, [ops.Tail(ops.ListVar('b')), ops.IntVar('a')])))
+    #print(str(correctLength) + ': ' + str(ops.checkRecurse(correctLength, inputoutputs, oracleInfo)))
+
+    #nonTerminatingLength = ops.Self(oracleInfo, [ops.ListVar('b'), ops.IntVar('a')])
+    #print(str(nonTerminatingLength) + ': ' +  str(ops.checkRecurse(nonTerminatingLength, inputoutputs, oracleInfo)))
 
 
 
@@ -190,16 +195,15 @@ if __name__ == "__main__":
     # Oracle functions can only take 1 input being a list of inputs
     def length(l):
         return len(l[0])
-    
     test(
-        [ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD],
-        #[ops.DECNUM],
-        [ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
-        #[],
-        [ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
-        #[],
-        [{"name":"x", "type": list}, {"name":"y", "type": int}],
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.INCNUM, ops.ZERO],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT, ops.ITE],
+        [ops.ISEMPTY],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL],
+        [{"name":"b", "type": list}],
         [],
-        [{"x":[5,1,2,3],"y":3, "_out":4},{"x":[1,1,2,3],"y":2, "_out":4}],
+        [{"b":[5,1,2,3], "_out":4},{"b":[1,1,2], "_out":3}, {"b":[1], "_out":1}, {"b":[], "_out":0}],
         length
     )
