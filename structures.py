@@ -1,4 +1,4 @@
-from collections import deque
+import sys
 
 # Program structs
 ITE = "ITE"
@@ -737,14 +737,11 @@ def getSatAndTest(program, recursiveCall, input, oracleInfo, depth, thresh):
         # Base case handling
         if(var.interpret(input) == 'ERROR'):
             return True
-        if(isinstance(var.interpret(input), list) and len(var.interpret(input)) == 0):
-            return True
         if(depth >= thresh):
             return False
         ret = var.interpret(input)
         new_input_dict[list(input.keys())[i]] = ret
         new_input_arr.append(ret)
-    print(str(new_input_dict) + ' ')
     if(oracleInfo['fun'](new_input_arr) != program.interpret(new_input_dict)):
         print(str(new_input_dict) + ' ')
         return False
@@ -754,14 +751,34 @@ def testRecurse(program, inputoutputs, oracleInfo):
     rec = getRecursiveCall(program)
     if(rec == None):
         return False
-    
     for input in inputoutputs:
         if(input['_out'] != program.interpret(input)):
             return False
-        if not getSatAndTest(program, rec, input, oracleInfo, 0, 10):
+        if not getSatAndTest(program, rec, input, oracleInfo, 0, sys.getrecursionlimit()/2):
             return False
         
     return True
+
+def isTerminating(program, inputoutputs, oracleInfo):
+    rec = getRecursiveCall(program)
+    if(rec == None):
+        return True
+    for input in inputoutputs:
+        if not getSat(program, rec, input, oracleInfo, 0, sys.getrecursionlimit()/2):
+            return False
+    return True
+
+def getSat(program, recursiveCall, input, oracleInfo, depth, thresh):
+    new_input_dict = {}
+    for i, var in enumerate(recursiveCall.right):
+        # Base case handling
+        if(var.interpret(input) == 'ERROR'):
+            return True
+        if(depth >= thresh):
+            return False
+        ret = var.interpret(input)
+        new_input_dict[list(input.keys())[i]] = ret
+    return True and getSat(program, recursiveCall, new_input_dict, oracleInfo, depth+1, thresh)
 
 def isCorrect(program, inputoutputs):
     count = 0

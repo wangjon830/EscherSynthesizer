@@ -38,7 +38,7 @@ def heuristic(prog):
         vals.append(val)
     return max(vals)
 
-def grow(plist, intOps, boolOps, listOps, oracleInfo, heurlevel):
+def grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, heurlevel):
     newInts, newLists, newBools = [], [], []
 
     selfInputs = None
@@ -72,7 +72,7 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo, heurlevel):
             if(len(oracleInfo["inputs"]) == 1):
                 args = [args]
             new_prog = ops.Self(oracleInfo, args)
-            if(heuristic(new_prog) <= heurlevel):
+            if(heuristic(new_prog) <= heurlevel and ops.isTerminating(new_prog, inputoutputs, oracleInfo)):
                 if(oracleInfo["output"] == int):
                     newInts.append(new_prog)
                 elif(oracleInfo["output"] == list):
@@ -211,7 +211,7 @@ def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     iters = 4
     baseHeur = 1
     for x in range(baseHeur+1, iters+baseHeur+1):
-        plist = grow(plist, intOps, boolOps, listOps, oracleInfo, x)
+        plist = grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, x)
         plist = elimEquivalents(plist, inputoutputs, oracleInfo)
         #print(opListToString(plist[0]+plist[1]+plist[2]))
 
@@ -222,7 +222,7 @@ def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
         res = ''
         [out, correct] = ops.getOutput(prog, inputoutputs)
         res += str(out) + ' ' + str(correct)
-        #print(str(prog) + " " + res)
+        print(str(prog) + " " + res)
     #print(str(prog) + ' ' + str(heuristic(prog)))
     
     #testRec = ops.Plus(ops.Div2(ops.IntVar('a')), ops.Times(ops.IntVar('b'), ops.IntVar('c')))
@@ -231,12 +231,12 @@ def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     #testP = ops.Div2(ops.Self(oracleInfo, [ops.Concat(ops.ListVar('b'), ops.ListVar('b')), ops.IntVar('a')]))
     #print(ops.getRecursiveCall(testP))
     #print(str(testP) + ': ' + str(ops.checkRecurse(testP, inputoutputs, oracleInfo)))
-    correctLength = ops.Ite(ops.IsEmpty(ops.ListVar('x')), ops.Zero(), ops.IncrementNum(ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x')), ops.IntVar('y')])))
-    print(ops.testRecurse(correctLength, inputoutputs, oracleInfo))
+    #correctLength = ops.Ite(ops.IsEmpty(ops.ListVar('x')), ops.Zero(), ops.IncrementNum(ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x')), ops.IntVar('y')])))
+    #print(ops.testRecurse(correctLength, inputoutputs, oracleInfo))
     #print(str(correctLength) + ': ' + str(ops.checkRecurse(correctLength, inputoutputs, oracleInfo)))
 
-    nonTerminatingLength = ops.Self(oracleInfo, [ops.ListVar('x'), ops.IntVar('y')])
-    print(ops.testRecurse(nonTerminatingLength, inputoutputs, oracleInfo))
+    #nonTerminatingLength = ops.Self(oracleInfo, [ops.ListVar('x'), ops.IntVar('y')])
+    #print(ops.testRecurse(nonTerminatingLength, inputoutputs, oracleInfo))
     #print(str(nonTerminatingLength) + ': ' +  str(ops.checkRecurse(nonTerminatingLength, inputoutputs, oracleInfo)))
 
 
