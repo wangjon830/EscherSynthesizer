@@ -121,8 +121,30 @@ def resolve(syn, goalGraph, inputoutputs):
             if r.elseSat is None and match(program, r.elsegoal, inputoutputs):
                 r.elseSat = program
         if r.ifSat is not None and r.thenSat is not None and r.elseSat is not None:
-            return r
+            result = resolving(r, goalGraph)
+            if result:
+                return result
+
     return None
+
+def resolving(r, goalGraph):
+    newNode = ops.Ite(r.ifSat, r.thenSat, r.elseSat)
+    for edge in goalGraph.E:
+        if edge[0] == r:
+            if edge[1] == goalGraph.root:
+                return newNode
+            for e in goalGraph.E:
+                if e[0] == edge[1]:
+                    resolver = e[1]
+                    if resolver.ifSat is None and resolver.ifgoal == e[0]:
+                        resolver.ifSat = program
+                    if resolver.elseSat is None and resolver.elsegoal == e[0]:
+                        resolver.elseSat = program
+                    if resolver.ifSat is not None and resolver.thenSat is not None and resolver.elseSat is not None:
+                        result = resolving(resolver, goalGraph)
+                        if result:
+                            return result
+                    return None
 
 def saturate():
     return
@@ -159,17 +181,8 @@ def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs,
             new_str += str(r.elseSat) + ' '
 
             print(new_str)
-    new_str = ''
-    new_str += str(ans.ifgoal) + ' '
-    new_str += str(ans.ifSat) + ' '
-    new_str += str(ans.thengoal) + ' '
-    new_str += str(ans.thenSat) + ' '
 
-    new_str += str(ans.elsegoal) + ' '
-    new_str += str(ans.elseSat) + ' '
-    print()
-    print()
-    print(new_str)
+    print(ans)
 
 
 if __name__ == "__main__":
