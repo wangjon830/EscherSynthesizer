@@ -56,16 +56,24 @@ def elimEquvalent(plist, inputoutputs):
     return newList
 
 def splitgoal(syn, goalGraph, inputoutputs):
+    goals = goalGraph.G.copy()
     for program in syn:
-        for goal in goalGraph.G:
+        for goal in goals:
             progGoal = [None]*len(inputoutputs)
-
+            matched = 0
+            notmatched = 0
             for index, input in enumerate(inputoutputs):
-                if goal[index] == '?' or program.interpret(input) == goal[index]:
+                if goal[index] == '?':
                     progGoal[index] = True
+                elif program.interpret(input) == goal[index]:
+                    progGoal[index] = True
+                    matched = 1
                 else:
-                    progGoal[index] = False 
+                    progGoal[index] = False
+                    notmatched = 1
 
+            if matched == 0 or notmatched == 0:
+                continue
             if progGoal not in goalGraph.G:
                 newResolver = Resolver()
                 newResolver.ifgoal = progGoal
@@ -81,7 +89,6 @@ def splitgoal(syn, goalGraph, inputoutputs):
                         thenVector[index] = "?"
                         elseVector[index] = goal[index]
                     index += 1
-
                 newResolver.thengoal = thenVector
                 newResolver.thenSat = program
                 newResolver.elsegoal = elseVector
@@ -109,11 +116,9 @@ def match(program, goal, inputoutputs):
 def resolve(syn, goalGraph, inputoutputs):
     for r in goalGraph.R:
         for program in syn:
-            if match(program, r.ifgoal, inputoutputs):
+            if r.ifSat is None and match(program, r.ifgoal, inputoutputs):
                 r.ifSat = program
-            if match(program, r.thengoal, inputoutputs):
-                r.thenSat = program
-            if match(program, r.elsegoal, inputoutputs):
+            if r.elseSat is None and match(program, r.elsegoal, inputoutputs):
                 r.elseSat = program
         if r.ifSat is not None and r.thenSat is not None and r.elseSat is not None:
             return r
@@ -133,7 +138,7 @@ def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs,
 
     ans = None
     level = 1
-    while(ans == None):
+    while(ans is None):
         print(level)
         plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo, level)
         plist = fs.elimEquivalents(plist, inputoutputs, oracleInfo)
@@ -141,19 +146,30 @@ def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs,
             if("tail" in str(prog)):
                 print(prog)
         splitgoal(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
-        ans = resolve(syn, goalGraph, inputoutputs)
+        ans = resolve(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
         level += 1
         for r in goalGraph.R:
             new_str = ''
             new_str += str(r.ifgoal) + ' '
             new_str += str(r.ifSat) + ' '
             new_str += str(r.thengoal) + ' '
-            new_str += str(r.ifSat) + ' '
+            new_str += str(r.thenSat) + ' '
 
             new_str += str(r.elsegoal) + ' '
             new_str += str(r.elseSat) + ' '
 
             print(new_str)
+    new_str = ''
+    new_str += str(ans.ifgoal) + ' '
+    new_str += str(ans.ifSat) + ' '
+    new_str += str(ans.thengoal) + ' '
+    new_str += str(ans.thenSat) + ' '
+
+    new_str += str(ans.elsegoal) + ' '
+    new_str += str(ans.elseSat) + ' '
+    print()
+    print()
+    print(new_str)
 
 
 if __name__ == "__main__":
