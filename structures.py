@@ -18,6 +18,7 @@ NOT = "NOT"
 EQUAL = "EQUAL"
 ISEMPTY = "ISEMPTY"
 ISNEGATIVE = "ISNEGATIVE"
+ISPOSITIVE = "ISPOSITIVE"
 LT = "LT"
 
 # Synthesis Int Ops
@@ -67,13 +68,14 @@ class Node:
         self.inputoutputs = {}
 
     def memoize(self, input, output):
-        if(self.inputoutputs != None):
-            self.inputoutputs[str(input)] = output
+        #if(self.inputoutputs != None):
+        #    self.inputoutputs[str(input)] = output
+        return
 
     def checkMem(self, input):
-        if(self.inputoutputs != None):
-            if(str(input) in self.inputoutputs.keys()):
-                return self.inputoutputs[str(input)]
+        #if(self.inputoutputs != None):
+        #   if(str(input) in self.inputoutputs.keys()):
+        #        return self.inputoutputs[str(input)]
         return None
             
     def __str__(self):
@@ -379,6 +381,27 @@ class IsNegative(Node):
         val = self.val.interpret(envt)
         if(val != "ERROR"):
             ret = val < 0
+            self.memoize(envt, ret)
+            return ret
+        else:
+            return "ERROR"
+
+class IsPositive(Node):
+    def __init__(self, val):
+        super().__init__()
+        self.type = ISPOSITIVE
+        self.val = val
+
+    def __str__(self):
+        return "(" + str(self.val) +" >= 0)"
+
+    def interpret(self, envt):
+        if(self.checkMem(envt) != None):
+            return self.checkMem(envt)
+
+        val = self.val.interpret(envt)
+        if(val != "ERROR"):
+            ret = val >= 0
             self.memoize(envt, ret)
             return ret
         else:
@@ -703,6 +726,7 @@ class Self(Node):
         for prog in self.right:
             if(prog.interpret(envt) == "ERROR"): return "ERROR"
             args.append(prog.interpret(envt))
+
         ret = self.left["fun"](args)
         self.memoize(envt, ret)
         return ret
@@ -734,11 +758,13 @@ def getSatAndTest(program, recursiveCall, input, oracleInfo, depth, thresh):
     new_input_arr = []
     for i, var in enumerate(recursiveCall.right):
         # Base case handling
-        if(var.interpret(input) == 'ERROR'):
-            return True
-        if(depth >= thresh):
-            return False
         ret = var.interpret(input)
+        if(ret == 'ERROR'):
+            return True
+        if(isinstance(ret, int) and ret <= 0):
+            return True
+        if(depth >= thresh or (isinstance(ret, int) and ret > 1000000)):
+            return False
         new_input_dict[list(input.keys())[i]] = ret
         new_input_arr.append(ret)
     if(oracleInfo['fun'](new_input_arr) != program.interpret(new_input_dict)):
@@ -770,11 +796,13 @@ def getSat(program, recursiveCall, input, oracleInfo, depth, thresh):
     new_input_dict = {}
     for i, var in enumerate(recursiveCall.right):
         # Base case handling
-        if(var.interpret(input) == 'ERROR'):
+        ret = var.interpret(input)
+        if(ret == 'ERROR'):
+            return True
+        if(isinstance(ret, int) and ret <= 0):
             return True
         if(depth >= thresh):
             return False
-        ret = var.interpret(input)
         new_input_dict[list(input.keys())[i]] = ret
     return True and getSat(program, recursiveCall, new_input_dict, oracleInfo, depth+1, thresh)
 

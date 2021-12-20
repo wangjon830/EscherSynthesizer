@@ -24,6 +24,14 @@ def splitgoal(syn, goalGraph, inputoutputs):
     goals = goalGraph.G.copy()
     for program in syn:
         for goal in goals:
+            non = False
+            for i in goal:
+                if isinstance(i, bool):
+                    non = True
+                    break
+            if(non):
+                continue
+            
             progGoal = [None]*len(inputoutputs)
             matched = 0
             notmatched = 0
@@ -160,6 +168,7 @@ def escher(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
 
     if(ops.testRecurse(ans, inputoutputs, oracleInfo)):
         print('Found Prog: ' + str(ans) + '\nInputs ' + str(inputoutputs) + '\nLevel: ' + str(level))
+        print(ops.getOutput(ans, inputoutputs))
         return ans
     else:
         print('Found ERROR Prog: ' + str(ans) + '\nInputs ' + str(inputoutputs) + '\nLevel: ' + str(level))
