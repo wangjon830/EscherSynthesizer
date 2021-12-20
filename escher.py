@@ -29,17 +29,23 @@ def splitgoal(syn, goalGraph, inputoutputs):
             notmatched = 0
             for index, input in enumerate(inputoutputs):
                 if goal[index] == '?':
-                    progGoal[index] = True
+                    progGoal[index] = '?'
                 elif program.interpret(input) == goal[index]:
                     progGoal[index] = True
-                    matched = 1
+                    matched += 1
                 else:
                     progGoal[index] = False
-                    notmatched = 1
+                    notmatched += 1
 
             if matched == 0 or notmatched == 0:
                 continue
-            if progGoal not in goalGraph.G:
+            exists = 0
+            for edge in goalGraph.E:
+                if edge[1] == goal:
+                    if goalMatch(edge[0].ifgoal, progGoal):
+                        exists = 1
+
+            if exists == 0:
                 newResolver = Resolver()
                 newResolver.ifgoal = progGoal
                 thenVector = [None]*len(inputoutputs)
@@ -47,7 +53,10 @@ def splitgoal(syn, goalGraph, inputoutputs):
 
                 index = 0
                 while index < len(progGoal):
-                    if progGoal[index]:
+                    if progGoal[index] == "?":
+                        thenVector[index] = "?"
+                        elseVector[index] = "?"
+                    elif progGoal[index]:
                         thenVector[index] = goal[index]
                         elseVector[index] = "?"
                     else:
@@ -92,6 +101,12 @@ def resolve(syn, goalGraph, inputoutputs):
 
     return None
 
+def goalMatch(goal1, goal2):
+    for index, val in enumerate(goal1):
+        if goal1[index] != goal2[index]:
+            return False
+    return True
+
 def resolving(r, goalGraph):
     newNode = ops.Ite(r.ifSat, r.thenSat, r.elseSat)
     for edge in goalGraph.E:
@@ -101,9 +116,9 @@ def resolving(r, goalGraph):
             for e in goalGraph.E:
                 if e[0] == edge[1]:
                     resolver = e[1]
-                    if resolver.ifSat is None and resolver.ifgoal == e[0]:
+                    if resolver.ifSat is None and goalMatch(resolver.ifgoal, e[0]):
                         resolver.ifSat = newNode
-                    if resolver.elseSat is None and resolver.elsegoal == e[0]:
+                    if resolver.elseSat is None and goalMatch(resolver.elsegoal, e[0]):
                         resolver.elseSat = newNode
                     if resolver.ifSat is not None and resolver.thenSat is not None and resolver.elseSat is not None:
                         result = resolving(resolver, goalGraph)
@@ -121,11 +136,6 @@ def escher(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     oracleInfo = {"fun": oracleFun, "inputs": oracleInputs, "output": oracleOutput}
 
     plist = fs.initplist(vars, consts, intOps, boolOps, listOps)
-
-    answer = ops.Ite(ops.IsEmpty(ops.ListVar('x')), ops.ListVar('x'), ops.Ite(ops.IsEmpty(ops.Tail(ops.ListVar('x'))), ops.ListVar('x'), ops.Ite(ops.Equals(ops.Head(ops.ListVar('x')), ops.Head(ops.Tail(ops.ListVar('x')))),ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x'))]), ops.Cons(ops.Head(ops.ListVar('x')), ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x'))])) )))
-    print(answer)
-    print(ops.testRecurse(answer, inputoutputs, oracleInfo))
-    print(ops.getOutput(answer, inputoutputs))
     ans = None
     level = 1
     while(ans is None):
@@ -229,7 +239,7 @@ def test_compress():
     )
 
 if __name__ == "__main__":
-    #test_length()
+    test_length()
     #test_reverse()
-    test_compress()
+    #test_compress()
 
