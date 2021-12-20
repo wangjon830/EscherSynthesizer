@@ -20,41 +20,6 @@ class Resolver():
         self.elsegoal = []
         self.elseSat = None
 
-memo = {}
-branches = []
-def testProgram(syn, inputoutputs):
-    for program in syn:
-        count = 0
-        for i, inputoutput in enumerate(inputoutputs):
-            out = program.interpret(inputoutput)
-            print (
-                f'{i + 1}. Evaluating programs {program}\non inputoutput examples {inputoutput}. The output of the program is {out}\n')
-            if out == inputoutput["_out"]:
-                count += 1
-            else:
-                break
-        if len(inputoutputs) == count:
-            return program
-    return None
-
-def elimEquvalent(plist, inputoutputs):
-    newList = []
-    for term in plist:
-        exists = False
-        for term2 in newList:
-            count = 0
-            for input in inputoutputs:
-                if term.interpret(input) == term2.interpret(input):
-                    count+=1
-                else:
-                    break
-            if count == len(inputoutputs):
-                exists = True
-                break
-        if not exists:
-            newList.append(term)
-    return newList
-
 def splitgoal(syn, goalGraph, inputoutputs):
     goals = goalGraph.G.copy()
     for program in syn:
@@ -137,19 +102,18 @@ def resolving(r, goalGraph):
                 if e[0] == edge[1]:
                     resolver = e[1]
                     if resolver.ifSat is None and resolver.ifgoal == e[0]:
-                        resolver.ifSat = program
+                        resolver.ifSat = newNode
                     if resolver.elseSat is None and resolver.elsegoal == e[0]:
-                        resolver.elseSat = program
+                        resolver.elseSat = newNode
                     if resolver.ifSat is not None and resolver.thenSat is not None and resolver.elseSat is not None:
                         result = resolving(resolver, goalGraph)
                         if result:
                             return result
                     return None
 
-def saturate():
-    return
+def escher(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
+    goalGraph = GoalGraph([input['_out'] for input in inputoutputs])
 
-def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     oracleInputs = []
     for var in vars:
         oracleInputs.append(var)
@@ -158,15 +122,17 @@ def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs,
 
     plist = fs.initplist(vars, consts, intOps, boolOps, listOps)
 
+    answer = ops.Ite(ops.IsEmpty(ops.ListVar('x')), ops.ListVar('x'), ops.Ite(ops.IsEmpty(ops.Tail(ops.ListVar('x'))), ops.ListVar('x'), ops.Ite(ops.Equals(ops.Head(ops.ListVar('x')), ops.Head(ops.Tail(ops.ListVar('x')))),ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x'))]), ops.Cons(ops.Head(ops.ListVar('x')), ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x'))])) )))
+    print(answer)
+    print(ops.testRecurse(answer, inputoutputs, oracleInfo))
+    print(ops.getOutput(answer, inputoutputs))
     ans = None
     level = 1
     while(ans is None):
         print(level)
-        plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo, level)
+        plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, level)
         plist = fs.elimEquivalents(plist, inputoutputs, oracleInfo)
-        for prog in plist[0]+plist[1]+plist[2]:
-            if("tail" in str(prog)):
-                print(prog)
+
         splitgoal(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
         ans = resolve(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
         level += 1
@@ -180,27 +146,90 @@ def escher(syn, goalGraph, intOps, boolOps, listOps, vars, consts, inputoutputs,
             new_str += str(r.elsegoal) + ' '
             new_str += str(r.elseSat) + ' '
 
-            print(new_str)
+            #print(new_str)
 
-    print(ans)
+    if(ops.testRecurse(ans, inputoutputs, oracleInfo)):
+        print('Found Prog: ' + str(ans) + '\nInputs ' + str(inputoutputs) + '\nLevel: ' + str(level))
+        return ans
+    else:
+        print('Found ERROR Prog: ' + str(ans) + '\nInputs ' + str(inputoutputs) + '\nLevel: ' + str(level))
 
-
-if __name__ == "__main__":
+def test_length():
     def length(l):
         return len(l[0])
-    gr = GoalGraph([4,2,1,0])
+
     escher(
-        [],
-        gr,
-        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD],
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
         [ops.INCNUM, ops.ZERO],
         #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
         [ops.ISEMPTY],
         #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
         [ops.TAIL],
-        [{"name": "x", "type": list}, {"name": "y", "type": int}],
+        [{"name": "x", "type": list}],
         [],
-        [{"x": [5, 1, 2, 3], "y": 3, "_out": 4}, {"x": [2,3], "y": 2, "_out": 2}, {"x": [1], "y": 2, "_out": 1}, {"x": [], "y": 2, "_out": 0}],
+        [{"x": [5, 1, 2, 3], "_out": 4}, {"x": [2,3], "_out": 2}, {"x": [1], "_out": 1}, {"x": [], "_out": 0}],
         length
     )
+
+def test_reverse():
+    def reverse(l):
+        new_list = []
+        for i in reversed(l[0]):
+            new_list.append(i)
+        return new_list
+
+    escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL, ops.EMPTYLIST, ops.CONS, ops.CONCAT],
+        [{"name": "x", "type": list}],
+        [],
+        [{"x": [5, 1, 2, 3], "_out": [3,2,1,5]}, {"x": [2,3], "_out": [3,2]}, {"x": [1], "_out": [1]}, {"x": [], "_out": []}],
+        reverse
+    )
+
+def test_compress():
+    def compress(l):
+        new_list = []
+        i = 0
+        curr_el = None
+        while(i < len(l[0])):
+            if(curr_el != None):
+                while(i < len(l[0]) and l[0][i] == curr_el):
+                    i += 1
+                if(i < len(l[0])):
+                    curr_el = l[0][i]
+                    new_list.append(curr_el)
+            else:
+                curr_el = l[0][i]
+                new_list.append(curr_el)
+            i += 1
+        return new_list
+
+    escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY, ops.EQUAL],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL, ops.EMPTYLIST, ops.CONS],
+        [{"name": "x", "type": list}],
+        [],
+        [{"x": [], "_out": []}, {"x": [7], "_out": [7]},
+        {"x": [9,9], "_out": [9]}, 
+        {"x": [3,9], "_out": [3,9]}, 
+        {"x": [2,3,9], "_out": [2,3,9]}, 
+        {"x": [9,9,2], "_out": [9,2]}, 
+        {"x": [3,3,3,9], "_out": [3,9]},
+        {"x": [2,3,3,9,9], "_out": [2,3,9]}],
+        compress
+    )
+
+if __name__ == "__main__":
+    #test_length()
+    #test_reverse()
+    test_compress()
 

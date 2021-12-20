@@ -72,9 +72,8 @@ class Node:
 
     def checkMem(self, input):
         if(self.inputoutputs != None):
-            for inputoutput in self.inputoutputs.keys():
-                if(inputoutput == str(input)):
-                    return self.inputoutputs[inputoutput]
+            if(str(input) in self.inputoutputs.keys()):
+                return self.inputoutputs[str(input)]
         return None
             
     def __str__(self):
@@ -607,10 +606,10 @@ class Cons(Node):
             ret = []
             ret.append(left)
 
-            if(self.right.type in intOps or self.right.type in boolOps):
+            if(isinstance(right, list)):
+                ret += (right)
+            else:
                 ret.append(right)
-            elif(self.right.type in listOps):
-                ret += right
             self.memoize(envt, ret)
             return ret
         else:
@@ -743,7 +742,6 @@ def getSatAndTest(program, recursiveCall, input, oracleInfo, depth, thresh):
         new_input_dict[list(input.keys())[i]] = ret
         new_input_arr.append(ret)
     if(oracleInfo['fun'](new_input_arr) != program.interpret(new_input_dict)):
-        print(str(new_input_dict) + ' ')
         return False
     return True and getSatAndTest(program, recursiveCall, new_input_dict, oracleInfo, depth+1, thresh)
 
@@ -754,7 +752,7 @@ def testRecurse(program, inputoutputs, oracleInfo):
     for input in inputoutputs:
         if(input['_out'] != program.interpret(input)):
             return False
-        if not getSatAndTest(program, rec, input, oracleInfo, 0, sys.getrecursionlimit()/2):
+        if not getSatAndTest(program, rec, input, oracleInfo, 0, 10):
             return False
         
     return True
@@ -764,7 +762,7 @@ def isTerminating(program, inputoutputs, oracleInfo):
     if(rec == None):
         return True
     for input in inputoutputs:
-        if not getSat(program, rec, input, oracleInfo, 0, sys.getrecursionlimit()/2):
+        if not getSat(program, rec, input, oracleInfo, 0, 10):
             return False
     return True
 
