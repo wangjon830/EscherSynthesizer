@@ -8,6 +8,7 @@ class GoalGraph():
         self.R = []
         self.E = []
         self.Ites = []
+        self.branching = [self.root]
 
 
 class Resolver():
@@ -89,7 +90,7 @@ def match(program, goal, inputoutputs):
     return True
 
 def resolve(syn, goalGraph, inputoutputs):
-    syn = syn + goalGraph.Ites
+    syn = syn.copy() + goalGraph.Ites
     for r in goalGraph.R:
         for program in syn:
             if r.ifSat is None and match(program, r.ifgoal, inputoutputs):
@@ -127,7 +128,7 @@ def resolving(r, goalGraph):
                     return None
 
 def splitgoalMmm(syn, goalGraph, inputoutputs):
-    goals = goalGraph.G.copy()
+    goals = goalGraph.branching.copy()
     for program in syn:
         for inde, goal in enumerate(goals):
             non = False
@@ -199,6 +200,7 @@ def splitgoalMmm(syn, goalGraph, inputoutputs):
                         goalGraph.G.append(progGoal)
                         goalGraph.G.append(thenVector)
                         goalGraph.G.append(elseVector)
+                        goalGraph.branching.append(elseVector)
 
                         goalGraph.E.append((progGoal, newResolver))
                         goalGraph.E.append((thenVector, newResolver))
@@ -219,15 +221,16 @@ def escher(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
     plist = fs.initplist(vars, consts, intOps, boolOps, listOps)
     ans = None
     level = 1
-    while(ans is None):
+    while(level < 6):
         print(level)
         plist = fs.grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, level)
         plist = fs.elimEquivalents(plist, inputoutputs, oracleInfo)
-
+        #for prog in plist[2]:
+            #print(prog)
         splitgoalMmm(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
         ans = resolve(plist[0]+plist[1]+plist[2], goalGraph, inputoutputs)
         level += 1
-        if level == 5:
+        if level == 6:
             for r in goalGraph.R:
                 new_str = ''
                 new_str += str(r.ifgoal) + ' '
