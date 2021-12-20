@@ -1,7 +1,7 @@
-import escher as es
-import time
+import escherNestedIfElse as es
 import structures as ops
 from collections import deque
+import time
 
 def test_length():
     def length(l):
@@ -195,16 +195,166 @@ def test_sum_under():
         sum_under
     )
 
+def test_compress():
+    def compress(l):
+        new_list = []
+        i = 0
+        curr_el = None
+        while(i < len(l[0])):
+            if(curr_el != None):
+                while(i < len(l[0]) and l[0][i] == curr_el):
+                    i += 1
+                if(i < len(l[0])):
+                    curr_el = l[0][i]
+                    new_list.append(curr_el)
+            else:
+                curr_el = l[0][i]
+                new_list.append(curr_el)
+            i += 1
+        return new_list
+
+    es.escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY, ops.EQUAL],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL, ops.EMPTYLIST, ops.CONS],
+        [{"name": "x", "type": list}],
+        [],
+        [{"x": [], "_out": []}, {"x": [7], "_out": [7]},
+        {"x": [9,9], "_out": [9]}, 
+        {"x": [3,9], "_out": [3,9]}, 
+        {"x": [2,3,9], "_out": [2,3,9]}, 
+        {"x": [9,9,2], "_out": [9,2]}, 
+        {"x": [3,3,3,9], "_out": [3,9]},
+        {"x": [2,3,3,9,9], "_out": [2,3,9]}],
+        compress
+    )
+
+def test_contains():
+    def contains(l):
+        return l[1] in l[0]
+
+    es.escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY, ops.EQUAL, ops.FALSE_exp, ops.TRUE_exp],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL],
+        [{"name": "x", "type": list}, {"name": "y", "type": int}],
+        [],
+        [{"x": [],"y": 1, "_out": False}, 
+        {"x": [1,2],"y": 3, "_out": False}, 
+        {"x": [1,2,3],"y": 1, "_out": True}, 
+        {"x": [1,2,3],"y": -1, "_out": False}, 
+        {"x": [1,2,3],"y": 2, "_out": True},
+        {"x": [1,2,3],"y": 3, "_out": True},  
+        {"x": [1,2,3],"y": 4, "_out": False}, 
+        ],
+        contains
+    )
+
+def test_last_in_list():
+    def last_in_list(l):
+        if(len(l[0]) <= 0):
+            return "ERROR"
+        else:
+            return l[0][-1]
+
+    es.escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL],
+        [{"name": "x", "type": list}],
+        [],
+        [{"x": [], "_out": "ERROR"}, 
+        {"x": [1], "_out": 1},
+        {"x": [1,2,3], "_out": 3},  
+        {"x": [1,6,7,11], "_out": 11},
+        {"x": [10,25,7,9,18], "_out": 18},  
+        ],
+        last_in_list
+    )
+
+def test_drop_last():
+    def drop_last(l):
+        if(len(l[0]) <= 0):
+            return []
+        else:
+            return l[0][0:len(l[0])-1]
+
+    es.escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL, ops.EMPTYLIST, ops.CONS],
+        [{"name": "x", "type": list}],
+        [],
+        [{"x": [], "_out": []}, 
+        {"x": [1], "_out": []},
+        {"x": [1,2], "_out": [1]},
+        {"x": [1,2,3], "_out": [1,2]},
+        {"x": [1,1,1,2,3,2], "_out": [1,1,1,2,3]},
+        ],
+        drop_last
+    )
+
+def test_evens():
+    def evens_in_list(l):
+        new_arr = []
+        i = 0
+        while(i < len(l[0])):
+            new_arr.append(l[0][i])
+            i+=2
+        return new_arr
+
+    es.escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.HEAD],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT],
+        [ops.ISEMPTY],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [ops.TAIL, ops.EMPTYLIST, ops.CONS],
+        [{"name": "x", "type": list}],
+        [],
+        [{"x": [], "_out": []}, 
+        {"x": [1], "_out": [1]},
+        {"x": [1,2], "_out": [1]},
+        {"x": [1,2,3,4], "_out": [1,3]},
+        {"x": [1,2,3,4,5,6], "_out": [1,3,5]},
+        ],
+        evens_in_list
+    )
+
 if __name__ == "__main__":
     tic = time.perf_counter()
-
+    # Standard Case Works (DO NOT RUN ALL AT ONCE AS IT CAN GET VERY MEMORY INTENSIVE)
     #test_length()
     #test_reverse()
     #test_square_list()
     #test_stutter()
-    #test_insert()
     #test_fib()
+    #test_insert()
+
+    # Nested cases (Working)
+    #test_compress()
+    #test_last_in_list()
+    #test_drop_last()
+    #test_evens()
+    
+    # Standard Case Doesn't work ?
     #test_sum_under()
     
+    # Nested cases (Not working?)
+    #test_contains()
+
     toc = time.perf_counter()
-    print('Time: ' + str(toc-tic))
+    print("Time: " + str(toc-tic))
+    

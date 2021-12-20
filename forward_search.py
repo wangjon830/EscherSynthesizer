@@ -175,6 +175,10 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, heurlevel):
                 new_prog = ops.Concat(listProg1, listProg2)
                 if(heuristic(new_prog) <= heurlevel):
                     newLists.append(new_prog)
+            if ops.EQUAL in boolOps:
+                new_prog = ops.Equals(listProg1, listProg2)
+                if(heuristic(new_prog) <= heurlevel):
+                    newBools.append(new_prog)
 
     for boolProg1 in plist[2]:
         if ops.NOT in boolOps:
@@ -195,18 +199,6 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, heurlevel):
     plist[0] += newInts
     plist[1] += newLists
     plist[2] += newBools
-
-    #print(opListToString(plist[0]+plist[1]+plist[2]))
-    #for p in plist[0]+plist[1]+plist[2]:
-    #    if(p.type == ops.ISPOSITIVE and p.val.type == ops.NEG):
-    #        print(p)
-    #        print(ops.getOutput(p,inputoutputs))
-    #    if(p.type == ops.ZERO):
-    #        print(p)
-    #        print(ops.getOutput(p,inputoutputs))
-    #    if(p.type == ops.PLUS and p.left.type == ops.INTVAR):
-    #        print(p)
-    #        print(ops.getOutput(p,inputoutputs))
     return plist
 
 def elimEquivalents(plist, inputs, oracleInfo):
@@ -232,63 +224,3 @@ def opListToString(opList):
         ret += ", "
     ret += "]"
     return ret
-
-def test(intOps, boolOps, listOps, vars, consts, inputoutputs, oracleFun):
-    oracleInputs = []
-    for var in vars:
-        oracleInputs.append(var)
-    oracleOutput = type(inputoutputs[0]["_out"])
-    oracleInfo = {"fun":oracleFun, "inputs":oracleInputs, "output":oracleOutput}
-
-    plist = initplist(vars, consts, intOps, boolOps, listOps)
-    print(opListToString(plist[0]+plist[1]+plist[2]))
-
-    iters = 4
-    baseHeur = 1
-    for x in range(baseHeur+1, iters+baseHeur+1):
-        plist = grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, x)
-        plist = elimEquivalents(plist, inputoutputs, oracleInfo)
-        #print(opListToString(plist[0]+plist[1]+plist[2]))
-
-
-    #print(opListToString(plist[0]+plist[1]+plist[2]))
-    #print(len(plist[0]+plist[1]+plist[2]))
-    for prog in plist[0]+plist[1]+plist[2]:
-        res = ''
-        [out, correct] = ops.getOutput(prog, inputoutputs)
-        res += str(out) + ' ' + str(correct)
-        print(str(prog) + " " + res)
-    #print(str(prog) + ' ' + str(heuristic(prog)))
-    
-    #testRec = ops.Plus(ops.Div2(ops.IntVar('a')), ops.Times(ops.IntVar('b'), ops.IntVar('c')))
-    #print(ops.getRecursiveCall(testRec))
-
-    #testP = ops.Div2(ops.Self(oracleInfo, [ops.Concat(ops.ListVar('b'), ops.ListVar('b')), ops.IntVar('a')]))
-    #print(ops.getRecursiveCall(testP))
-    #print(str(testP) + ': ' + str(ops.checkRecurse(testP, inputoutputs, oracleInfo)))
-    #correctLength = ops.Ite(ops.IsEmpty(ops.ListVar('x')), ops.Zero(), ops.IncrementNum(ops.Self(oracleInfo, [ops.Tail(ops.ListVar('x')), ops.IntVar('y')])))
-    #print(ops.testRecurse(correctLength, inputoutputs, oracleInfo))
-    #print(str(correctLength) + ': ' + str(ops.checkRecurse(correctLength, inputoutputs, oracleInfo)))
-
-    #nonTerminatingLength = ops.Self(oracleInfo, [ops.ListVar('x'), ops.IntVar('y')])
-    #print(ops.testRecurse(nonTerminatingLength, inputoutputs, oracleInfo))
-    #print(str(nonTerminatingLength) + ': ' +  str(ops.checkRecurse(nonTerminatingLength, inputoutputs, oracleInfo)))
-
-
-
-if __name__ == "__main__":
-    # Oracle functions can only take 1 input being a list of inputs
-    def length(l):
-        return len(l[0])
-    test(
-        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
-        [ops.INCNUM, ops.ZERO],
-        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.LT, ops.ITE],
-        [ops.ISEMPTY],
-        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
-        [ops.TAIL],
-        [{"name": "x", "type": list}, {"name": "y", "type": int}],
-        [],
-        [{"x":[5,1,2,3],"y":3, "_out":4},{"x":[1,1,2],"y":3, "_out":3}, {"x":[1],"y":3, "_out":1}, {"x":[],"y":3, "_out":0}],
-        length
-    )

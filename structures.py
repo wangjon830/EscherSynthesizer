@@ -741,6 +741,8 @@ def getOutput(program, inputoutputs):
     return [out_vect, bool_vect]
 
 def getRecursiveCall(program):
+    if(program == None):
+        return None
     if(isinstance(program, Self)):
         return program
         
