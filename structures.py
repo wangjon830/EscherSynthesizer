@@ -708,7 +708,7 @@ class Tail(Node):
 class Self(Node):
     def __init__(self, val, args):
         super().__init__()
-        self.type = NUM
+        self.type = SELF
         self.left = val
         self.right = args
 

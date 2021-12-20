@@ -1,4 +1,5 @@
 import escher as es
+import escher2 as es2
 import structures as ops
 from collections import deque
 
@@ -105,7 +106,7 @@ def test_insert():
             new_list.insert(l[1], l[2])
         return new_list
 
-    es.escher(
+    es2.escher(
         #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
         [ops.HEAD, ops.DECNUM, ops.NEG],
         #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.ISPOSITIVE, ops.LT],
@@ -141,7 +142,7 @@ def test_fib():
 
         return curr
 
-    es.escher(
+    es2.escher(
         #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
         [ops.PLUS, ops.DECNUM],
         #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.ISPOSITIVE, ops.LT],
@@ -155,15 +156,41 @@ def test_fib():
         {"x": 2, "_out": 1},
         {"x": 3, "_out": 2},
         {"x": 4, "_out": 3},
-        {"x": 5, "_out": 5},
-        {"x": 6, "_out": 8},
-        {"x": 7, "_out": 13},
-        {"x": 8, "_out": 21},
         {"x": 9, "_out": 34},
         {"x": 10, "_out": 55},
         {"x": 11, "_out": 89},
         ],
         fib
+    )
+
+def test_sum_under():
+    def sum_under(l):
+        sum = 0
+        for i in range(0, l[0]+1):
+            sum += i
+        return sum
+
+    es2.escher(
+        #[ops.PLUS, ops.MINUS, ops.TIMES, ops.INCNUM, ops.DECNUM, ops.NEG, ops.DIV2, ops.HEAD, ops.ZERO],
+        [ops.NEG, ops.ZERO, ops.PLUS, ops.DECNUM],
+        #[ops.FALSE_exp, ops.AND, ops.OR, ops.NOT, ops.EQUAL, ops.ISEMPTY, ops.ISNEGATIVE, ops.ISPOSITIVE, ops.LT],
+        [ops.ISPOSITIVE],
+        #[ops.TAIL, ops.CONS, ops.CONCAT, ops.INCLIST, ops.DECLIST, ops.EMPTYLIST, ops.ZEROLIST],
+        [],
+        [{"name": "x", "type": int}],
+        [],
+        [
+        {"x": -5, "_out": 0},
+        {"x": -1, "_out": 0},    
+        {"x": 0, "_out": 0},
+        {"x": 1, "_out": 1},
+        {"x": 2, "_out": 3},
+        {"x": 3, "_out": 6},
+        {"x": 4, "_out": 10},
+        {"x": 5, "_out": 15},
+        {"x": 6, "_out": 21},
+        ],
+        sum_under
     )
 
 if __name__ == "__main__":
@@ -173,4 +200,5 @@ if __name__ == "__main__":
     #test_stutter()
     #test_insert()
     test_fib()
+    #test_sum_under()
     

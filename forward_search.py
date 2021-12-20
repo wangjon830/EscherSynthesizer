@@ -197,10 +197,16 @@ def grow(plist, intOps, boolOps, listOps, oracleInfo, inputoutputs, heurlevel):
     plist[2] += newBools
 
     #print(opListToString(plist[0]+plist[1]+plist[2]))
-    for p in plist[0]+plist[1]+plist[2]:
-        if('fib' in str(p)):
-            print(p)
-            print(ops.getOutput(p, inputoutputs))
+    #for p in plist[0]+plist[1]+plist[2]:
+    #    if(p.type == ops.ISPOSITIVE and p.val.type == ops.NEG):
+    #        print(p)
+    #        print(ops.getOutput(p,inputoutputs))
+    #    if(p.type == ops.ZERO):
+    #        print(p)
+    #        print(ops.getOutput(p,inputoutputs))
+    #    if(p.type == ops.PLUS and p.left.type == ops.INTVAR):
+    #        print(p)
+    #        print(ops.getOutput(p,inputoutputs))
     return plist
 
 def elimEquivalents(plist, inputs, oracleInfo):
